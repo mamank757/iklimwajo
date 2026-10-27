@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Curah Hujan Kabupaten Wajo</title>
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--ink:#14211a;--mut:#5b6b61;--line:#d8e1db;--bar:#1f77a6;--base:#d9822b;--chip:#e8eeea;--hi:#1b5e86;--warm:#c0392b;--cool:#6b4fbb}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1713;--card:#17231d;--ink:#e6efe9;--mut:#9fb0a5;--line:#2a3a31;--bar:#4aa8d8;--base:#f0a24f;--chip:#22322a;--hi:#8fd0f2;--warm:#ff7b6b;--cool:#a998f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{margin:0 0 2px;font-size:clamp(1.4rem,4.5vw,2rem);line-height:1.2}
+.sub{margin:0 0 18px;color:var(--mut);font-size:.9rem}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.bar label{font-weight:600}
+select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:42px}
+select{font-weight:700;min-width:110px}
+button{cursor:pointer}button:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:3px solid var(--bar);outline-offset:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+.card,.box{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.card{padding:14px 16px}
+.card .k{font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.card .v{font-size:1.7rem;font-weight:800;line-height:1.2;color:var(--hi)}
+.card .v small{font-size:.85rem;font-weight:600;color:var(--mut)}
+.card .s{font-size:.8rem;color:var(--mut)}
+.box{padding:14px 16px;margin-bottom:16px}
+.box h2{margin:0 0 8px;font-size:1.05rem}
+svg{display:block;width:100%;height:auto}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--mut);margin-top:6px}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px;font-size:.88rem}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0}
+.pc{font-weight:700}.na{color:var(--mut)}
+.fe{color:var(--warm);font-weight:700}.fl{color:var(--cool);font-weight:700}.fn{color:var(--mut);font-weight:600}
+.note{font-size:.8rem;color:var(--mut);margin:8px 0 0}
+#st{padding:28px 0;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Curah Hujan Kabupaten Wajo</h1>
+  <p class="sub" id="upd">Telemetri BBWS Pompengan Jeneberang · rata-rata seluruh pos aktif</p>
+
+  <div id="st" role="status">Memuat data…</div>
+
+  <div id="app" hidden>
+    <div class="bar">
+      <label for="thn">Tahun</label>
+      <button id="prev" type="button" aria-label="Tahun sebelumnya">‹</button>
+      <select id="thn"></select>
+      <button id="next" type="button" aria-label="Tahun berikutnya">›</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <section class="box">
+      <h2 id="jc">Total curah hujan per bulan</h2>
+      <div id="chart" role="img" aria-label="Grafik batang curah hujan bulanan"></div>
+      <div class="leg">
+        <span><i style="background:var(--bar)"></i>Total bulan (mm)</span>
+        <span><i style="background:var(--bar);opacity:.4"></i>Data bulan belum lengkap</span>
+        <span><i style="background:var(--base)"></i>Rata-rata semua tahun</span>
+      </div>
+    </section>
+
+    <section class="box">
+      <h2 id="je">ENSO (ONI) per bulan</h2>
+      <div id="enso" role="img" aria-label="Grafik batang indeks ENSO (ONI) bulanan"></div>
+      <div class="leg">
+        <span><i style="background:var(--warm)"></i>El Niño (ONI ≥ +0,5)</span>
+        <span><i style="background:var(--cool)"></i>La Niña (ONI ≤ −0,5)</span>
+        <span><i style="background:var(--mut);opacity:.5"></i>Netral</span>
+      </div>
+      <p class="note">ONI = anomali suhu laut Niño 3.4, rerata 3 bulan berpusat pada bulan tersebut (NOAA CPC, ERSSTv5). Data diambil otomatis dari NOAA CPC (ERSSTv6) lewat API Apps Script, terakhir sampai <span id="ons">–</span>; dua bulan terakhir dapat direvisi NOAA. Korelasi pada kartu di atas dihitung antara ONI dan anomali hujan bulanan (selisih % terhadap rata-rata bulan yang sama, dibatasi −100% sampai +200%), hanya dari bulan lengkap dengan pos aktif. Nilai negatif berarti El Niño cenderung disertai hujan di bawah normal. Korelasi bukan bukti sebab-akibat, dan sebelum 2020 datanya hanya dari 1 pos.</p>
+    </section>
+
+    <section class="box">
+      <h2 id="jt">Rincian per bulan</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Bulan</th><th>Total (mm)</th><th>Rata-rata/hari</th><th>Data (hari)</th><th>Pos aktif</th><th>Rata-rata bulan ini</th><th>% rata-rata</th><th>ENSO (ONI)</th></tr></thead>
+        <tbody id="tb"></tbody><tfoot id="tf"></tfoot>
+      </table></div>
+      <p class="note" id="nt"></p>
+    </section>
+  </div>
+</div>
+
+<script>
+// GANTI dengan URL web app Apps Script Anda (berakhiran /exec)
+const API_URL = 'https://script.google.com/macros/s/AKfycbz-HcGwS2QZljtNm1cLVOrmMK8K9EwP_p28tXDJoHjvlxP6VBcS5bf4j8oMag8DhFml/exec';
+
+// ONI bulanan dimuat dari API Apps Script (aksi=oni): { "1997": [12 nilai], ... }, indeks 0 = Januari
+let ONI = {}, oniAkhir = '';
+
+const BLN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const $ = id => document.getElementById(id);
+const fmt = (n, d = 1) => n == null ? '–' : n.toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d });
+const oniOf = (y, m) => { const v = (ONI[y] || [])[m]; return v == null ? null : v; };
+const sg = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1);
+const fase = v => v == null ? '' : v >= .5 ? 'El Niño' : v <= -.5 ? 'La Niña' : 'Netral';
+const kls = v => v >= .5 ? 'fe' : v <= -.5 ? 'fl' : 'fn';
+let years = {}, base = [], tahun = null, korel = {};
+
+function pearson(p) {
+  const n = p.length;
+  if (n < 8) return null;
+  const mx = p.reduce((s, a) => s + a[0], 0) / n, my = p.reduce((s, a) => s + a[1], 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  p.forEach(a => { sxy += (a[0] - mx) * (a[1] - my); sxx += (a[0] - mx) ** 2; syy += (a[1] - my) ** 2; });
+  return sxx && syy ? { r: sxy / Math.sqrt(sxx * syy), n } : null;
+}
+
+function proses(list) {
+  years = {};
+  const acc = Array.from({ length: 12 }, () => []);
+  list.forEach(r => {
+    const y = +r.bulan.slice(0, 4), m = +r.bulan.slice(5, 7) - 1;
+    (years[y] = years[y] || Array(12).fill(null))[m] = r;
+    if (r.lengkap && (r.pos_rata == null || r.pos_rata > 0)) acc[m].push(r.mm);
+  });
+  base = acc.map(a => a.length >= 3 ? a.reduce((s, x) => s + x, 0) / a.length : null);
+  const all = [], jn = [];
+  list.forEach(r => {
+    const y = +r.bulan.slice(0, 4), m = +r.bulan.slice(5, 7) - 1, o = oniOf(y, m);
+    if (o == null || !r.lengkap || !(r.pos_rata == null || r.pos_rata > 0) || !base[m]) return;
+    const p = [o, Math.max(-100, Math.min(200, (r.mm / base[m] - 1) * 100))];
+    all.push(p); if (m >= 6 && m <= 10) jn.push(p);
+  });
+  korel = { all: pearson(all), jn: pearson(jn) };
+}
+
+function langkah(max) {
+  const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+
+function gambar(rows) {
+  const W = 720, H = 300, m = { l: 46, r: 10, t: 14, b: 28 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const maks = Math.max(10, ...rows.map((r, i) => Math.max(r ? r.mm : 0, base[i] || 0)));
+  const st = langkah(maks * 1.05), top = Math.ceil(maks * 1.05 / st) * st;
+  const Y = v => m.t + ph - v / top * ph, cw = pw / 12, bw = cw * 0.58;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="system-ui,sans-serif">';
+  for (let v = 0; v <= top + 1e-9; v += st)
+    s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)"/>' +
+         '<text x="' + (m.l - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="11" fill="var(--mut)">' + fmt(v, 0) + '</text>';
+  rows.forEach((r, i) => {
+    const cx = m.l + cw * (i + .5);
+    s += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--mut)">' + BLN[i].slice(0, 3) + '</text>';
+    if (!r) return;
+    const h = Math.max(1.5, r.mm / top * ph);
+    s += '<g><title>' + BLN[i] + ': ' + fmt(r.mm) + ' mm' + (r.lengkap ? '' : ' (data ' + r.hari + '/' + r.hari_bulan + ' hari)') + '</title>' +
+         '<rect x="' + (cx - bw / 2) + '" y="' + (Y(0) - h) + '" width="' + bw + '" height="' + h + '" rx="3" fill="var(--bar)"' +
+         (r.lengkap ? '' : ' opacity=".4" stroke="var(--bar)" stroke-dasharray="3 2"') + '/></g>';
+    if (h > 14 || r.mm > 0) s += '<text x="' + cx + '" y="' + (Y(0) - h - 4) + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">' + fmt(r.mm, 0) + '</text>';
+  });
+  let d = '';
+  base.forEach((b, i) => { if (b != null) d += (d ? 'L' : 'M') + (m.l + cw * (i + .5)) + ',' + Y(b); });
+  s += '<path d="' + d + '" fill="none" stroke="var(--base)" stroke-width="2.4" stroke-linejoin="round"/>';
+  base.forEach((b, i) => { if (b != null) s += '<circle cx="' + (m.l + cw * (i + .5)) + '" cy="' + Y(b) + '" r="3.5" fill="var(--base)"/>'; });
+  $('chart').innerHTML = s + '</svg>';
+}
+
+function gambarEnso() {
+  const W = 720, H = 140, m = { l: 46, r: 10, t: 16, b: 16 }, pw = W - m.l - m.r, ph = H - m.t - m.b, cw = pw / 12, bw = cw * .58;
+  const v = Array.from({ length: 12 }, (_, i) => oniOf(tahun, i));
+  const top = Math.max(2, Math.ceil(Math.max(...v.map(x => Math.abs(x || 0))) * 2) / 2);
+  const Y = x => m.t + ph / 2 - x / top * (ph / 2), y0 = Y(0);
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="system-ui,sans-serif">';
+  [top, 0, -top].forEach(t => {
+    s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="' + (t ? 'var(--line)' : 'var(--mut)') + '"/>' +
+         '<text x="' + (m.l - 6) + '" y="' + (Y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--mut)">' + sg(t) + '</text>';
+  });
+  v.forEach((x, i) => {
+    if (x == null) return;
+    const cx = m.l + cw * (i + .5), h = Math.max(1.5, Math.abs(Y(x) - y0)), pos = x >= 0;
+    const fill = x >= .5 ? 'var(--warm)' : x <= -.5 ? 'var(--cool)' : 'var(--mut)';
+    s += '<g><title>' + BLN[i] + ': ONI ' + sg(x) + ' (' + fase(x) + ')</title><rect x="' + (cx - bw / 2) + '" y="' + (pos ? y0 - h : y0) +
+         '" width="' + bw + '" height="' + h + '" rx="2" fill="' + fill + '"' + (Math.abs(x) < .5 ? ' opacity=".5"' : '') + '/></g>' +
+         '<text x="' + cx + '" y="' + (pos ? y0 - h - 3 : y0 + h + 11) + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">' + sg(x) + '</text>';
+  });
+  $('enso').innerHTML = s + '</svg>';
+}
+
+function kartu(rows) {
+  const ada = rows.filter(Boolean), lk = ada.filter(r => r.lengkap);
+  const total = ada.reduce((s, r) => s + r.mm, 0);
+  let sm = 0, sb = 0;
+  rows.forEach((r, i) => { if (r && r.lengkap && base[i] != null) { sm += r.mm; sb += base[i]; } });
+  const valid = lk.filter(r => r.pos_rata == null || r.pos_rata > 0);
+  const basah = valid.reduce((a, r) => !a || r.mm > a.mm ? r : a, null);
+  const kering = valid.reduce((a, r) => !a || r.mm < a.mm ? r : a, null);
+  const nm = r => r ? BLN[+r.bulan.slice(5, 7) - 1] : '–';
+  const c = (k, v, s) => '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>';
+
+  const ov = Array.from({ length: 12 }, (_, i) => oniOf(tahun, i)).filter(x => x != null);
+  const ne = ov.filter(x => x >= .5).length, nl = ov.filter(x => x <= -.5).length, nn = ov.length - ne - nl;
+  const dom = !ov.length ? null : ne > nl && ne > nn ? ['El Niño', 'fe'] : nl > ne && nl > nn ? ['La Niña', 'fl'] : ['Netral', 'fn'];
+  const kuat = r => Math.abs(r) >= .5 ? 'kuat' : Math.abs(r) >= .3 ? 'sedang' : 'lemah';
+  const k = korel.all, kj = korel.jn;
+
+  $('cards').innerHTML =
+    c('Total ' + tahun, fmt(total, 0) + ' <small>mm</small>', lk.length + ' bulan lengkap dari ' + ada.length + ' bulan berdata') +
+    c('Dibanding rata-rata', sb ? fmt(sm / sb * 100, 0) + '<small>%</small>' : '–', sb ? 'khusus ' + lk.length + ' bulan lengkap' : 'belum ada bulan lengkap') +
+    c('Bulan terbasah', nm(basah), basah ? fmt(basah.mm) + ' mm' : 'belum ada bulan lengkap') +
+    c('Bulan terkering', nm(kering), kering ? fmt(kering.mm) + ' mm' : 'belum ada bulan lengkap') +
+    c('ENSO ' + tahun, dom ? '<span class="' + dom[1] + '">' + dom[0] + '</span>' : '–', dom ? ne + ' bulan El Niño · ' + nl + ' La Niña · ' + nn + ' netral' : 'belum ada data ONI') +
+    c('Korelasi ENSO–hujan', k ? fmt(k.r, 2) + ' <small>' + kuat(k.r) + '</small>' : '–',
+      k ? 'semua tahun, ' + k.n + ' bulan' + (kj ? ' · Jul–Nov: ' + fmt(kj.r, 2) + ' (' + kj.n + ')' : '') : 'data belum cukup');
+}
+
+function tabel(rows) {
+  let tot = 0, hr = 0, parsial = false;
+  $('tb').innerHTML = rows.map((r, i) => {
+    const o = oniOf(tahun, i), eh = o == null ? '<td class="na">–</td>' : '<td class="' + kls(o) + '">' + sg(o) + ' ' + fase(o) + '</td>';
+    if (!r) return '<tr><td>' + BLN[i] + '</td><td class="na" colspan="6">tidak ada data</td>' + eh + '</tr>';
+    tot += r.mm; hr += r.hari;
+    const pc = base[i] ? r.mm / base[i] * 100 : null, ps = r.lengkap ? '' : '*';
+    if (!r.lengkap) parsial = true;
+    return '<tr><td>' + BLN[i] + '</td><td><b>' + fmt(r.mm) + ps + '</b></td><td>' + fmt(r.hari ? r.mm / r.hari : null, 2) + '</td><td>' +
+      r.hari + '/' + r.hari_bulan + '</td><td>' + fmt(r.pos_rata) + '</td><td>' + fmt(base[i], 0) + '</td><td class="pc">' + (pc == null ? '–' : fmt(pc, 0) + '%' + ps) + '</td>' + eh + '</tr>';
+  }).join('');
+  $('tf').innerHTML = '<tr><td>Total ' + tahun + '</td><td>' + fmt(tot) + '</td><td>' + fmt(hr ? tot / hr : null, 2) + '</td><td>' + hr + ' hari</td><td colspan="4"></td></tr>';
+  $('nt').textContent = (parsial ? '* Data bulan belum lengkap, sehingga totalnya lebih kecil dari bulan penuh dan persentasenya belum sebanding. ' : '') +
+    '“Rata-rata bulan ini” adalah rerata total bulan yang sama dari semua tahun (hanya bulan dengan data lengkap). Tahun-tahun awal memiliki lebih sedikit pos, dan nilai 0 mm bisa berarti data kosong. Lihat kolom pos aktif. Label ENSO ditentukan dari ambang ONI ±0,5 per bulan.';
+}
+
+function render() {
+  const rows = years[tahun];
+  $('jc').textContent = 'Total curah hujan per bulan, ' + tahun;
+  $('je').textContent = 'ENSO (ONI) per bulan, ' + tahun;
+  $('jt').textContent = 'Rincian per bulan, ' + tahun;
+  kartu(rows); gambar(rows); gambarEnso(); tabel(rows);
+  const ys = Object.keys(years).map(Number).sort((a, b) => a - b);
+  $('prev').disabled = tahun <= ys[0]; $('next').disabled = tahun >= ys[ys.length - 1];
+  $('thn').value = tahun;
+  try { history.replaceState(null, '', '#' + tahun); } catch (e) { /* abaikan */ }
+}
+
+function pilih(y) { if (years[y]) { tahun = y; render(); } }
+
+async function muat() {
+  $('st').hidden = false; $('st').textContent = 'Memuat data…';
+  try {
+    if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diisi');
+    const u = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + 'aksi=';
+    const [res, oRes] = await Promise.all([fetch(u + 'wajo_bulanan'), fetch(u + 'oni').catch(() => null)]);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (j.error) throw new Error(j.error);
+    if (!j.data || !j.data.length) throw new Error('data kosong');
+    ONI = {}; oniAkhir = '';
+    try {
+      const o = oRes && oRes.ok ? await oRes.json() : null;
+      if (o && o.data) { ONI = o.data; oniAkhir = o.terakhir || ''; }
+    } catch (e) { /* ENSO opsional: dashboard tetap jalan tanpa ONI */ }
+    $('ons').textContent = oniAkhir ? BLN[+oniAkhir.slice(5, 7) - 1] + ' ' + oniAkhir.slice(0, 4) : 'tidak tersedia';
+    proses(j.data);
+    const ys = Object.keys(years).map(Number).sort((a, b) => b - a);
+    $('thn').innerHTML = ys.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+    const h = parseInt(location.hash.slice(1), 10);
+    tahun = years[h] ? h : ys[0];
+    $('upd').textContent = 'Telemetri BBWS Pompengan Jeneberang · rata-rata seluruh pos aktif · diperbarui ' +
+      new Date(j.diperbarui).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+    $('st').hidden = true; $('app').hidden = false;
+    render();
+  } catch (e) {
+    $('st').innerHTML = 'Data belum bisa dimuat (' + e.message + '). <button type="button" id="ulang">Coba lagi</button>';
+    $('ulang').onclick = muat;
+  }
+}
+
+$('thn').onchange = e => pilih(+e.target.value);
+$('prev').onclick = () => pilih(tahun - 1);
+$('next').onclick = () => pilih(tahun + 1);
+muat();
+</script>
+</body>
+</html>
