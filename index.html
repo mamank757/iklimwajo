@@ -232,8 +232,8 @@ function kartu(rows) {
     c('Bulan terbasah', nm(basah), basah ? fmt(basah.mm) + ' mm' : 'belum ada bulan lengkap') +
     c('Bulan terkering', nm(kering), kering ? fmt(kering.mm) + ' mm' : 'belum ada bulan lengkap') +
     c('ENSO ' + tahun, dom ? '<span class="' + dom[1] + '">' + dom[0] + '</span>' : '–', dom ? ne + ' bulan El Niño · ' + nl + ' La Niña · ' + nn + ' netral' : 'belum ada data ONI') +
-    c('Korelasi ENSO–hujan', k ? fmt(k.r, 2) + ' <small>' + kuat(k.r) + '</small>' : '–',
-      k ? 'semua tahun, ' + k.n + ' bulan' + (kj ? ' · Jul–Nov: ' + fmt(kj.r, 2) + ' (' + kj.n + ')' : '') : 'data belum cukup');
+    c('Dampak ENSO (Jul–Nov)', kj ? fmt(kj.r, 2) + ' <small>' + kuat(kj.r) + '</small>' : '–',
+      kj ? 'Korelasi musim kemarau (' + kj.n + ' bulan)' + (k ? ' · Rerata tahunan: ' + fmt(k.r, 2) : '') : 'data belum cukup');
 }
 
 function tabel(rows) {
