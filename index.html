@@ -392,6 +392,12 @@ async function muat() {
     $('ulang').onclick = muat;
   }
 }
+// Tambahkan 3 baris ini untuk menangkap aksi klik/ubah dari pengguna
+$('thn').addEventListener('change', (e) => pilih(Number(e.target.value)));
+$('prev').addEventListener('click', () => pilih(tahun - 1));
+$('next').addEventListener('click', () => pilih(tahun + 1));
+
+// Baris asli yang memuat data awal
 muat();
 </script>
 </body>
