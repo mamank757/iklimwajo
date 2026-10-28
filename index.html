@@ -18,7 +18,7 @@ select,button{font:inherit;color:var(--ink);background:var(--card);border:1px so
 select{font-weight:700;min-width:110px}
 button{cursor:pointer}button:disabled{opacity:.4;cursor:default}
 :focus-visible{outline:3px solid var(--bar);outline-offset:2px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
 .card,.box{background:var(--card);border:1px solid var(--line);border-radius:14px}
 .card{padding:14px 16px;min-width:0;overflow-wrap:anywhere}
 .card .k{font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
@@ -41,6 +41,9 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0}
 .fe{color:var(--warm);font-weight:700}.fl{color:var(--cool);font-weight:700}.fn{color:var(--mut);font-weight:600}
 .note{font-size:.8rem;color:var(--mut);margin:8px 0 0}
 #st{padding:28px 0;text-align:center;color:var(--mut)}
+@media(max-width:768px){
+.cards{grid-template-columns:repeat(2,1fr)}
+}
 @media(max-width:620px){
 .wrap{padding:16px 10px 32px}
 .cards{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -107,7 +110,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0}
 // GANTI dengan URL web app Apps Script Anda (berakhiran /exec)
 const API_URL = 'https://script.google.com/macros/s/AKfycbye1tQx2VYBj_o-AgZ2ObxnvjjvPIr8H0QnqXYfu_ZLHlda0JVB4Bqu2XIQjuRnxC0XCg/exec';
 
-// ONI bulanan dimuat dari API Apps Script (aksi=oni): { "1997": [12 nilai], ... }, indeks 0 = Januari
+// ONI bulanan dimuat dari API Apps Script (aksi=sst): { "1997": [12 nilai], ... }, indeks 0 = Januari
 let ONI = {}, oniAkhir = '';
 
 const BLN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -119,10 +122,9 @@ const fase = v => v == null ? '' : v >= .5 ? 'El Niño' : v <= -.5 ? 'La Niña' 
 const kls = v => v >= .5 ? 'fe' : v <= -.5 ? 'fl' : 'fn';
 let years = {}, base = [], tahun = null, korel = {};
 
-// Ukuran grafik mengikuti lebar kontainer, sehingga font tampil dalam piksel sebenarnya
 function ukur(id) {
   const W = Math.max(300, Math.round($(id).clientWidth || 720));
-  return { W: W, kecil: W < 520, fb: W < 360 ? 12 : W < 520 ? 13 : 14, fa: W < 520 ? 11 : 12 };   // fb = font bulan, fa = font angka
+  return { W: W, kecil: W < 520, fb: W < 360 ? 12 : W < 520 ? 13 : 14, fa: W < 520 ? 11 : 12 };
 }
 
 function pearson(p) {
@@ -217,6 +219,18 @@ function kartu(rows) {
   const valid = lk.filter(r => r.pos_rata == null || r.pos_rata > 0);
   const basah = valid.reduce((a, r) => !a || r.mm > a.mm ? r : a, null);
   const kering = valid.reduce((a, r) => !a || r.mm < a.mm ? r : a, null);
+  
+  // Mencari rekor tahun terbasah dan terkering sepanjang masa
+  let yStats = [];
+  for (let y in years) {
+    let blnLk = years[y].filter(r => r && r.lengkap);
+    if (blnLk.length >= 11) { // syarat minimal 11 bulan data lengkap agar fair
+      yStats.push({ y: y, tot: blnLk.reduce((s, r) => s + r.mm, 0) });
+    }
+  }
+  let tBasah = yStats.reduce((a, b) => (!a || b.tot > a.tot ? b : a), null);
+  let tKering = yStats.reduce((a, b) => (!a || b.tot < a.tot ? b : a), null);
+
   const nm = r => r ? BLN[+r.bulan.slice(5, 7) - 1] : '–';
   const c = (k, v, s) => '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>';
 
@@ -229,11 +243,13 @@ function kartu(rows) {
   $('cards').innerHTML =
     c('Total ' + tahun, fmt(total, 0) + ' <small>mm</small>', lk.length + ' bulan lengkap dari ' + ada.length + ' bulan berdata') +
     c('Dibanding rata-rata', sb ? fmt(sm / sb * 100, 0) + '<small>%</small>' : '–', sb ? 'khusus ' + lk.length + ' bulan lengkap' : 'belum ada bulan lengkap') +
-    c('Bulan terbasah', nm(basah), basah ? fmt(basah.mm) + ' mm' : 'belum ada bulan lengkap') +
-    c('Bulan terkering', nm(kering), kering ? fmt(kering.mm) + ' mm' : 'belum ada bulan lengkap') +
+    c('Bulan terbasah tahun ini', nm(basah), basah ? fmt(basah.mm) + ' mm' : 'belum ada bulan lengkap') +
+    c('Bulan terkering tahun ini', nm(kering), kering ? fmt(kering.mm) + ' mm' : 'belum ada bulan lengkap') +
+    c('Tahun terbasah sejak 1997', tBasah ? tBasah.y : '–', tBasah ? fmt(tBasah.tot) + ' mm (min. 11 bln data)' : 'Data tidak cukup') +
+    c('Tahun terkering sejak 1997', tKering ? tKering.y : '–', tKering ? fmt(tKering.tot) + ' mm (min. 11 bln data)' : 'Data tidak cukup') +
     c('ENSO ' + tahun, dom ? '<span class="' + dom[1] + '">' + dom[0] + '</span>' : '–', dom ? ne + ' bulan El Niño · ' + nl + ' La Niña · ' + nn + ' netral' : 'belum ada data ONI') +
     c('Dampak ENSO (Jul–Nov)', kj ? fmt(kj.r, 2) + ' <small>' + kuat(kj.r) + '</small>' : '–',
-      kj ? 'Korelasi musim kemarau (' + kj.n + ' bulan)' + (k ? ' · Rerata tahunan: ' + fmt(k.r, 2) : '') : 'data belum cukup');
+      kj ? 'Korelasi musim kemarau (' + kj.n + ' bln)' + (k ? ' · Rerata tahunan: ' + fmt(k.r, 2) : '') : 'data belum cukup');
 }
 
 function tabel(rows) {
@@ -266,45 +282,6 @@ function render() {
 
 function pilih(y) { if (years[y]) { tahun = y; render(); } }
 
-// Fungsi untuk mem-parsing data teks mingguan NOAA dan merata-ratakannya per bulan
-function prosesSST(textData) {
-  const BLN_EN = {JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11};
-  const lines = textData.split('\n');
-  const bulanan = {};
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    // Cari baris yang dimulai dengan tanggal, misal "03JAN2024"
-    if (/^\d{2}[A-Z]{3}\d{4}/.test(line)) {
-      const dateStr = line.substring(0, 9);
-      const mStr = dateStr.substring(2, 5);
-      const y = parseInt(dateStr.substring(5, 9), 10);
-      const m = BLN_EN[mStr];
-      const nums = line.match(/-?\d+\.\d/g); // Ekstrak semua angka desimal
-      
-      // Ambil kolom ke-6 (indeks 5) yaitu N3.4 SSTA
-      if (nums && nums.length >= 6) {
-        if (!bulanan[y]) bulanan[y] = {};
-        if (!bulanan[y][m]) bulanan[y][m] = { sum: 0, count: 0 };
-        bulanan[y][m].sum += parseFloat(nums[5]);
-        bulanan[y][m].count += 1;
-      }
-    }
-  }
-
-  const hasilSST = {};
-  for (const y in bulanan) {
-    hasilSST[y] = new Array(12).fill(null);
-    for (let m = 0; m < 12; m++) {
-      if (bulanan[y][m]) {
-        hasilSST[y][m] = Math.round((bulanan[y][m].sum / bulanan[y][m].count) * 10) / 10;
-      }
-    }
-  }
-  return hasilSST;
-}
-
-// Fungsi untuk mem-parsing data teks mingguan NOAA dan merata-ratakannya per bulan
 function prosesSST(textData) {
   const BLN_EN = {JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11};
   const lines = textData.split('\n');
@@ -313,7 +290,6 @@ function prosesSST(textData) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    // Cek apakah baris diawali dengan format tanggal (misal: "03JAN2024")
     if (/^\d{2}[A-Z]{3}\d{4}/.test(line)) {
       const dateStr = line.substring(0, 9);
       const mStr = dateStr.substring(2, 5);
@@ -321,17 +297,11 @@ function prosesSST(textData) {
       const y = parseInt(yStr, 10);
       const m = BLN_EN[mStr];
 
-      // Trik Regex: Ambil semua angka desimal di baris tersebut.
-      // Ini mengatasi masalah angka berdempetan seperti "26.5-0.2"
       const nums = line.match(/-?\d+\.\d/g);
-      
-      // Data format: [0]=N1+2 SST, [1]=N1+2 SSTA, [2]=N3 SST, [3]=N3 SSTA, [4]=N3.4 SST, [5]=N3.4 SSTA
       if (nums && nums.length >= 6) {
         const ssta34 = parseFloat(nums[5]); 
-        
         if (!bulanan[y]) bulanan[y] = {};
         if (!bulanan[y][m]) bulanan[y][m] = { sum: 0, count: 0 };
-        
         bulanan[y][m].sum += ssta34;
         bulanan[y][m].count += 1;
         lastBulan = `${y}-${('0'+(m+1)).slice(-2)}`;
@@ -339,27 +309,43 @@ function prosesSST(textData) {
     }
   }
 
-  // Konversi agregasi bulanan ke struktur Array 12 slot yang dipakai oleh chart
   const hasilONI = {};
   for (const y in bulanan) {
     hasilONI[y] = new Array(12).fill(null);
     for (let m = 0; m < 12; m++) {
       if (bulanan[y][m]) {
-        // Rata-rata dari minggu-minggu di bulan tersebut, bulatkan 1 desimal
         hasilONI[y][m] = Math.round((bulanan[y][m].sum / bulanan[y][m].count) * 10) / 10;
       }
     }
   }
-
   return { data: hasilONI, terakhir: lastBulan };
 }
+
+// === PENAMBAHAN EVENT LISTENER (NAVIGASI & RESIZE) ===
+$('thn').addEventListener('change', (e) => pilih(Number(e.target.value)));
+$('prev').addEventListener('click', () => {
+  const ys = Object.keys(years).map(Number).sort((a, b) => a - b);
+  const idx = ys.indexOf(tahun);
+  if (idx > 0) pilih(ys[idx - 1]);
+});
+$('next').addEventListener('click', () => {
+  const ys = Object.keys(years).map(Number).sort((a, b) => a - b);
+  const idx = ys.indexOf(tahun);
+  if (idx > -1 && idx < ys.length - 1) pilih(ys[idx + 1]);
+});
+window.addEventListener('resize', () => {
+  if (tahun && years[tahun]) {
+    gambar(years[tahun]);
+    gambarEnso();
+  }
+});
+
 async function muat() {
   $('st').hidden = false; $('st').textContent = 'Memuat data…';
   try {
     if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diisi');
     const u = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + 'aksi=';
     
-    // GANTI 'oni' menjadi 'sst' di baris ini
     const [res, oRes] = await Promise.all([fetch(u + 'wajo_bulanan'), fetch(u + 'sst').catch(() => null)]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const j = await res.json();
@@ -369,7 +355,6 @@ async function muat() {
     ONI = {}; oniAkhir = '';
     try {
       if (oRes && oRes.ok) {
-        // Ambil data sebagai teks, BUKAN json
         const textData = await oRes.text();
         const olah = prosesSST(textData);
         ONI = olah.data;
@@ -392,12 +377,6 @@ async function muat() {
     $('ulang').onclick = muat;
   }
 }
-// Tambahkan 3 baris ini untuk menangkap aksi klik/ubah dari pengguna
-$('thn').addEventListener('change', (e) => pilih(Number(e.target.value)));
-$('prev').addEventListener('click', () => pilih(tahun - 1));
-$('next').addEventListener('click', () => pilih(tahun + 1));
-
-// Baris asli yang memuat data awal
 muat();
 </script>
 </body>
