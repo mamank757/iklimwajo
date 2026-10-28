@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+Put your HTML text here<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
@@ -105,7 +105,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0}
 
 <script>
 // GANTI dengan URL web app Apps Script Anda (berakhiran /exec)
-const API_URL = 'https://script.google.com/macros/s/AKfycbz-HcGwS2QZljtNm1cLVOrmMK8K9EwP_p28tXDJoHjvlxP6VBcS5bf4j8oMag8DhFml/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbye1tQx2VYBj_o-AgZ2ObxnvjjvPIr8H0QnqXYfu_ZLHlda0JVB4Bqu2XIQjuRnxC0XCg/exec';
 
 // ONI bulanan dimuat dari API Apps Script (aksi=oni): { "1997": [12 nilai], ... }, indeks 0 = Januari
 let ONI = {}, oniAkhir = '';
@@ -266,21 +266,117 @@ function render() {
 
 function pilih(y) { if (years[y]) { tahun = y; render(); } }
 
+// Fungsi untuk mem-parsing data teks mingguan NOAA dan merata-ratakannya per bulan
+function prosesSST(textData) {
+  const BLN_EN = {JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11};
+  const lines = textData.split('\n');
+  const bulanan = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Cari baris yang dimulai dengan tanggal, misal "03JAN2024"
+    if (/^\d{2}[A-Z]{3}\d{4}/.test(line)) {
+      const dateStr = line.substring(0, 9);
+      const mStr = dateStr.substring(2, 5);
+      const y = parseInt(dateStr.substring(5, 9), 10);
+      const m = BLN_EN[mStr];
+      const nums = line.match(/-?\d+\.\d/g); // Ekstrak semua angka desimal
+      
+      // Ambil kolom ke-6 (indeks 5) yaitu N3.4 SSTA
+      if (nums && nums.length >= 6) {
+        if (!bulanan[y]) bulanan[y] = {};
+        if (!bulanan[y][m]) bulanan[y][m] = { sum: 0, count: 0 };
+        bulanan[y][m].sum += parseFloat(nums[5]);
+        bulanan[y][m].count += 1;
+      }
+    }
+  }
+
+  const hasilSST = {};
+  for (const y in bulanan) {
+    hasilSST[y] = new Array(12).fill(null);
+    for (let m = 0; m < 12; m++) {
+      if (bulanan[y][m]) {
+        hasilSST[y][m] = Math.round((bulanan[y][m].sum / bulanan[y][m].count) * 10) / 10;
+      }
+    }
+  }
+  return hasilSST;
+}
+
+// Fungsi untuk mem-parsing data teks mingguan NOAA dan merata-ratakannya per bulan
+function prosesSST(textData) {
+  const BLN_EN = {JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11};
+  const lines = textData.split('\n');
+  const bulanan = {}; 
+  let lastBulan = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Cek apakah baris diawali dengan format tanggal (misal: "03JAN2024")
+    if (/^\d{2}[A-Z]{3}\d{4}/.test(line)) {
+      const dateStr = line.substring(0, 9);
+      const mStr = dateStr.substring(2, 5);
+      const yStr = dateStr.substring(5, 9);
+      const y = parseInt(yStr, 10);
+      const m = BLN_EN[mStr];
+
+      // Trik Regex: Ambil semua angka desimal di baris tersebut.
+      // Ini mengatasi masalah angka berdempetan seperti "26.5-0.2"
+      const nums = line.match(/-?\d+\.\d/g);
+      
+      // Data format: [0]=N1+2 SST, [1]=N1+2 SSTA, [2]=N3 SST, [3]=N3 SSTA, [4]=N3.4 SST, [5]=N3.4 SSTA
+      if (nums && nums.length >= 6) {
+        const ssta34 = parseFloat(nums[5]); 
+        
+        if (!bulanan[y]) bulanan[y] = {};
+        if (!bulanan[y][m]) bulanan[y][m] = { sum: 0, count: 0 };
+        
+        bulanan[y][m].sum += ssta34;
+        bulanan[y][m].count += 1;
+        lastBulan = `${y}-${('0'+(m+1)).slice(-2)}`;
+      }
+    }
+  }
+
+  // Konversi agregasi bulanan ke struktur Array 12 slot yang dipakai oleh chart
+  const hasilONI = {};
+  for (const y in bulanan) {
+    hasilONI[y] = new Array(12).fill(null);
+    for (let m = 0; m < 12; m++) {
+      if (bulanan[y][m]) {
+        // Rata-rata dari minggu-minggu di bulan tersebut, bulatkan 1 desimal
+        hasilONI[y][m] = Math.round((bulanan[y][m].sum / bulanan[y][m].count) * 10) / 10;
+      }
+    }
+  }
+
+  return { data: hasilONI, terakhir: lastBulan };
+}
 async function muat() {
   $('st').hidden = false; $('st').textContent = 'Memuat data…';
   try {
     if (API_URL.indexOf('GANTI_') === 0) throw new Error('API_URL belum diisi');
     const u = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + 'aksi=';
-    const [res, oRes] = await Promise.all([fetch(u + 'wajo_bulanan'), fetch(u + 'oni').catch(() => null)]);
+    
+    // GANTI 'oni' menjadi 'sst' di baris ini
+    const [res, oRes] = await Promise.all([fetch(u + 'wajo_bulanan'), fetch(u + 'sst').catch(() => null)]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const j = await res.json();
     if (j.error) throw new Error(j.error);
     if (!j.data || !j.data.length) throw new Error('data kosong');
+    
     ONI = {}; oniAkhir = '';
     try {
-      const o = oRes && oRes.ok ? await oRes.json() : null;
-      if (o && o.data) { ONI = o.data; oniAkhir = o.terakhir || ''; }
-    } catch (e) { /* ENSO opsional: dashboard tetap jalan tanpa ONI */ }
+      if (oRes && oRes.ok) {
+        // Ambil data sebagai teks, BUKAN json
+        const textData = await oRes.text();
+        const olah = prosesSST(textData);
+        ONI = olah.data;
+        oniAkhir = olah.terakhir;
+      }
+    } catch (e) { console.error('Gagal memuat SST:', e); }
+    
     $('ons').textContent = oniAkhir ? BLN[+oniAkhir.slice(5, 7) - 1] + ' ' + oniAkhir.slice(0, 4) : 'tidak tersedia';
     proses(j.data);
     const ys = Object.keys(years).map(Number).sort((a, b) => b - a);
@@ -296,19 +392,6 @@ async function muat() {
     $('ulang').onclick = muat;
   }
 }
-
-$('thn').onchange = e => pilih(+e.target.value);
-$('prev').onclick = () => pilih(tahun - 1);
-$('next').onclick = () => pilih(tahun + 1);
-// gambar ulang grafik saat lebar layar berubah (misalnya HP diputar)
-let lw = 0, rz;
-addEventListener('resize', () => {
-  clearTimeout(rz);
-  rz = setTimeout(() => {
-    const w = $('chart').clientWidth;
-    if (w && w !== lw && tahun && years[tahun]) { lw = w; gambar(years[tahun]); gambarEnso(); }
-  }, 150);
-});
 muat();
 </script>
 </body>
